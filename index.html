@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Rand's Time Capsule ✨</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400&family=Caveat:wght@600&family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti Library -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #1a102f 0%, #2b1b3d 50%, #3a1c40 100%);
+      --card-bg: rgba(255, 253, 249, 0.95);
+      --accent-pink: #ff85a1;
+      --accent-gold: #f7d070;
+      --text-main: #2d1e2f;
+      --border-color: rgba(255, 255, 255, 0.3);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: var(--bg-gradient);
+      font-family: 'Fredoka', cursive, sans-serif;
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px 16px;
+      overflow-x: hidden;
+    }
+
+    /* Floating Background Sparkles */
+    .sparkle {
+      position: fixed;
+      background: white;
+      border-radius: 50%;
+      pointer-events: none;
+      opacity: 0.4;
+      animation: float 6s infinite ease-in-out;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0) scale(1); opacity: 0.3; }
+      50% { transform: translateY(-30px) scale(1.3); opacity: 0.7; }
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 16px;
+      color: #fff;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      color: var(--accent-gold);
+      text-shadow: 0 0 12px rgba(247, 208, 112, 0.4);
+      margin-bottom: 4px;
+      cursor: pointer;
+    }
+
+    header p {
+      font-size: 0.9rem;
+      opacity: 0.85;
+      font-weight: 400;
+    }
+
+    /* Admin Banner */
+    .admin-banner {
+      background: #ff4757;
+      color: white;
+      padding: 6px 16px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      display: none;
+      box-shadow: 0 4px 10px rgba(255, 71, 87, 0.4);
+    }
+
+    /* Countdown Card */
+    .countdown-card {
+      background: rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 14px 20px;
+      color: #fff;
+      text-align: center;
+      margin-bottom: 24px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      width: 100%;
+      max-width: 420px;
+    }
+
+    .countdown-timer {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--accent-pink);
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+
+    /* Continuous Grid */
+    .capsule-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(75px, 1fr));
+      gap: 12px;
+      width: 100%;
+      max-width: 420px;
+      margin-bottom: 24px;
+    }
+
+    .capsule-item {
+      aspect-ratio: 1;
+      background: rgba(255, 255, 255, 0.12);
+      border: 1.5px solid var(--border-color);
+      border-radius: 18px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+
+    .capsule-item:active {
+      transform: scale(0.92);
+    }
+
+    .capsule-item.unlocked {
+      background: rgba(255, 255, 255, 0.92);
+      border-color: var(--accent-pink);
+      box-shadow: 0 4px 12px rgba(255, 133, 161, 0.3);
+    }
+
+    /* Special Birthday Highlight Styling */
+    .capsule-item.birthday-special {
+      border: 2px solid var(--accent-gold) !important;
+      background: rgba(247, 208, 112, 0.25);
+      box-shadow: 0 0 15px rgba(247, 208, 112, 0.5);
+    }
+
+    .capsule-item.birthday-special.unlocked {
+      background: linear-gradient(135deg, #fff3d1 0%, #ffe3ec 100%);
+    }
+
+    .capsule-item.locked {
+      opacity: 0.45;
+    }
+
+    body.admin-mode .capsule-item.locked {
+      opacity: 0.85;
+      border: 1.5px dashed var(--accent-gold);
+    }
+
+    .capsule-icon {
+      font-size: 1.6rem;
+      margin-bottom: 2px;
+    }
+
+    .capsule-date {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .capsule-item.unlocked .capsule-date {
+      color: var(--text-main);
+    }
+
+    /* Grand New Year Card */
+    .ny-capsule {
+      grid-column: 1 / -1;
+      aspect-ratio: auto;
+      padding: 20px;
+      background: linear-gradient(135deg, #ffd166 0%, #ff85a1 100%);
+      border: 2px solid #fff;
+      border-radius: 22px;
+      color: var(--text-main);
+      box-shadow: 0 8px 25px rgba(255, 209, 102, 0.4);
+      animation: pulse 2s infinite alternate;
+      text-align: center;
+      margin-top: 8px;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      100% { transform: scale(1.02); }
+    }
+
+    /* Modal Overlay */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(15, 8, 28, 0.8);
+      backdrop-filter: blur(8px);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+      z-index: 100;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      background: var(--card-bg);
+      border-radius: 28px;
+      padding: 24px 20px;
+      width: 100%;
+      max-width: 400px;
+      max-height: 85vh;
+      overflow-y: auto;
+      text-align: center;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+      transform: translateY(20px) scale(0.95);
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      position: relative;
+    }
+
+    /* Birthday Modal Special Theme */
+    .modal-card.birthday-modal {
+      background: linear-gradient(135deg, #fffdfa 0%, #fff0f5 100%);
+      border: 3px solid var(--accent-gold);
+      box-shadow: 0 0 35px rgba(247, 208, 112, 0.6);
+    }
+
+    .modal-overlay.active .modal-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-date {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--accent-pink);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .english-text {
+      font-family: 'Caveat', cursive;
+      font-size: 1.45rem;
+      line-height: 1.4;
+      color: #3d2645;
+      margin-bottom: 16px;
+      white-space: pre-line;
+    }
+
+    .divider {
+      height: 1px;
+      background: rgba(0, 0, 0, 0.1);
+      margin: 16px auto;
+      width: 80%;
+    }
+
+    .arabic-text {
+      font-family: 'Amiri', serif;
+      font-size: 1.35rem;
+      line-height: 1.6;
+      color: #2b1b3d;
+      direction: rtl;
+      text-align: center;
+      white-space: pre-line;
+      margin-bottom: 20px;
+    }
+
+    .close-btn {
+      background: var(--text-main);
+      color: #fff;
+      border: none;
+      padding: 10px 28px;
+      border-radius: 12px;
+      font-family: 'Fredoka', sans-serif;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+
+    /* Admin Footer Button */
+    .admin-footer-btn {
+      margin-top: 10px;
+      background: rgba(255, 255, 255, 0.15);
+      border: 1px solid var(--border-color);
+      color: rgba(255, 255, 255, 0.7);
+      padding: 6px 14px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Floating Sparkles -->
+  <div class="sparkle" style="top: 10%; left: 15%; width: 6px; height: 6px; animation-delay: 0s;"></div>
+  <div class="sparkle" style="top: 40%; left: 80%; width: 8px; height: 8px; animation-delay: 2s;"></div>
+  <div class="sparkle" style="top: 70%; left: 25%; width: 5px; height: 5px; animation-delay: 4s;"></div>
+
+  <header>
+    <h1 id="titleHeader">Rand's Time Capsule <span id="secretTrigger">✨</span></h1>
+    <p>Daily notes starting Oct 5 • رسائل يومية تبدأ من اليوم</p>
+  </header>
+
+  <div class="admin-banner" id="adminBanner">🔑 ADMIN MODE ACTIVE (Previewing Locked Notes)</div>
+
+  <div class="countdown-card">
+    <div>Countdown to 2027:</div>
+    <div class="countdown-timer" id="countdownTimer">Loading countdown...</div>
+  </div>
+
+  <div class="capsule-grid" id="capsuleGrid">
+    <!-- Continuous Daily Capsules & New Year Letter generated here -->
+  </div>
+
+  <button class="admin-footer-btn" id="adminToggleBtn">Toggle Admin Mode 🔑</button>
+
+  <!-- Popup Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal-card" id="modalCard">
+      <div class="modal-date" id="modalDate">OCTOBER 5</div>
+      <div class="english-text" id="modalEnglish">English note here...</div>
+      <div class="divider" id="modalDivider"></div>
+      <div class="arabic-text" id="modalArabic">الملاحظة بالعربية هنا...</div>
+      <button class="close-btn" id="closeBtn">Close ✨ إغلاق</button>
+    </div>
+  </div>
+
+  <script>
+    let isAdminMode = false;
+    let tapCount = 0;
+
+    const icons = ["✨", "🍵", "⭐", "🎨", "🍰", "🎧", "🕯️", "🌸", "📖", "🌙", "☁️", "🍩", "🧸", "🍂", "🔥", "🚀", "💡", "🌈", "🏆", "💎"];
+
+    // Unique non-repeating motivational and encouraging messages
+    const messageBank = [
+      { en: "Believe in yourself today! You are capable of achieving far more than you think.", ar: "آمني بنفسكِ اليوم! أنتِ قادرة على تحقيق أكثر بكثير مما تتخيلين." },
+      { en: "Small progress is still progress. Keep going one step at a time!", ar: "التقدم الصغير هو تقدم أيضًا. واصلي السير خطوة بخطوة!" },
+      { en: "Don't forget to take a deep breath and give yourself credit for how far you've come.", ar: "لا تنسي أن تأخذي نفسًا عميقًا وأن تفخري بالنقطة التي وصلتِ إليها." },
+      { en: "Your potential is limitless. Trust your skills and let your brilliance shine!", ar: "إمكانياتكِ لا حدود لها. ثقي بمهاراتكِ ودعي بريقكِ يلمع!" },
+      { en: "Every big achievement starts with the decision to try. You've got this!", ar: "كل إنجاز كبير يبدأ بقرار المحاولة. أنتِ قادرة على ذلك!" },
+      { en: "Be proud of your effort today. Even quiet dedication moves mountains.", ar: "كوني فخورة بجهدكِ اليوم. حتى الإصرار الهادئ يحرك الجبال." },
+      { en: "Focus on how far you've come, not just how far you have left to go.", ar: "ركزي على الشوط الذي قطعتِهِ، وليس فقط على المسافة المتبقية." },
+      { en: "Mistakes are just proof that you are learning and growing stronger.", ar: "الأخطاء هي مجرد دليل على أنكِ تتعلمين وتزدادين قوة." },
+      { en: "Take time to rest today—you are doing better than you realize.", ar: "خذي وقتًا للراحة اليوم—أنتِ تؤدين أفضل مما تدركين." },
+      { en: "Your determination is inspiring! Keep reaching for your biggest dreams.", ar: "عزيمتكِ ملهمة! واصلي السعي نحو أكبر أحلامكِ." },
+      { en: "Difficult roads often lead to beautiful destinations. Stay strong!", ar: "الطرق الصعبة غالبًا ما تؤدي إلى وجهات جميلة. كوني قوية!" },
+      { en: "You don't need to be perfect to make remarkable progress.", ar: "لستِ بحاجة للكمال لكي تحققي تقدمًا ملفتًا." },
+      { en: "Shine brightly today! The world is always better with your smile in it.", ar: "أشرقي اليوم! العالم دائمًا أجمل بابتسامتكِ." },
+      { en: "Celebrate your little wins today—they add up to something extraordinary.", ar: "احتفلي بإنجازاتكِ الصغيرة اليوم—فهي تتراكم لتصنع شيئًا استثنائيًا." },
+      { en: "You have the courage within you to overcome any challenge in front of you.", ar: "تملكين الشجاعة في داخلكِ لتجاوز أي تحدٍ أمامكِ." },
+      { en: "Stay curious, stay positive, and keep pushing forward toward your goals.", ar: "كوني شغوفة، إيجابية، وواصلي التقدم نحو أهدافكِ." },
+      { en: "Your hard work today is building a brighter tomorrow. Keep going!", ar: "عملكِ الجاد اليوم يبني غدًا أكثر إشراقًا. استمري!" },
+      { en: "Doubt is temporary, but your strength and capacity are permanent.", ar: "الشك أمر مؤقت، لكن قوتكِ وقدرتكِ دائمتان." },
+      { en: "Always trust the timing of your journey. Everything unfolds as it should.", ar: "ثقي دائمًا بتوقيت رحلتكِ. كل شيء يتحقق في وقته المناسب." },
+      { en: "Never discount your talents. You bring something truly special to the world.", ar: "لا تقبلي أبدًا بالتقليل من مواهبكِ. أنتِ تقدمين شيئًا فريدًا بحق." },
+      { en: "Make space for joy today. You deserve happiness in everything you do.", ar: "افسحي مجالًا للفرح اليوم. أنتِ تستحقين السعادة في كل ما تفعلينه." },
+      { en: "One day or Day One—you decide! Today is a great day to start.", ar: "إما أن تقولين 'يومًا ما' أو 'اليوم الأول'—القرار لكِ! اليوم يوم رائع للبدء." },
+      { en: "Your kindness and strength are your superpower. Never forget that.", ar: "لطفكِ وقوتكِ هما قوتكِ الخارقة. لا تنسي ذلك أبدا." },
+      { en: "Even the tallest trees start from a tiny seed. Be patient with yourself.", ar: "حتى أطول الأشجار تبدأ من بذرة صغيرة. كوني صبورة مع نفسكِ." },
+      { en: "Focus on the present moment and do your best—that is always enough.", ar: "ركزي على اللحظة الحالية وافعلي قصارى جهدكِ—هذا كافٍ دائمًا." },
+      { en: "Great things take time. Keep sowing seeds of effort with confidence.", ar: "الأشياء العظيمة تتطلب وقتًا. واصلي بذر بذور الجهد بثقة." },
+      { en: "You are stronger than your anxiety and braver than your fears.", ar: "أنتِ أقوى من قلقكِ وأشجع من خوفكِ." },
+      { en: "Choose hope over worry today, and watch your mindset shift.", ar: "اختاري الأمل بدلاً من القلق اليوم، وراقبي كيف تتغير نظرتكِ." },
+      { en: "Keep your eyes on the stars and your feet firmly on the ground.", ar: "ابقي عينيكِ متطلعتين للنجوم ورجليكِ ثابتتين على الأرض." },
+      { en: "Your dedication doesn't go unnoticed. Keep building your future!", ar: "تفانيكِ لا يمر دون ملاحظة. واصلي بناء مستقبلكِ!" },
+      { en: "Give yourself permission to pause and recharge when you need to.", ar: "اسمحي لنفسكِ بالتوقف وإعادة شحن طاقتكِ عندما تحتاجين إلى ذلك." },
+      { en: "Surround yourself with light and stay true to your values.", ar: "أحيطي نفسكِ بالنور وابقي مخلصة لقيمكِ." },
+      { en: "Courage doesn't always roar; sometimes it's the quiet voice saying 'I'll try again tomorrow.'", ar: "الشجاعة ليست دائمًا صوتًا عاليًا؛ أحيانًا هي الصوت الهادئ الذي يقول 'سأحاول مجددًا غدًا'." },
+      { en: "Keep believing in your ideas—they have the power to create magic.", ar: "واصلي الإيمان بأفكاركِ—فهي تملك القدرة على صنع السحر." },
+      { en: "You are capable of doing hard things and coming out stronger.", ar: "أنتِ قادرة على مواجهة الأمور الصعبة والخروج منها أكثر قوة." },
+      { en: "Every morning brings a brand new opportunity to rewrite your story.", ar: "كل صباح يجلب فرصة جديدة تمامًا لإعادة كتابة قصتكِ." },
+      { en: "Your resilience is remarkable. Whatever comes your way, you can handle it.", ar: "مرونتكِ وقدرتكِ على الصمود مذهلة. أي شيء يواجهكِ، قادرة على التعامل معه." },
+      { en: "Treat yourself with the same kindness you extend so freely to others.", ar: "عاملي نفسكِ بنفس اللطف الذي تمنحينه بكرامة للآخرين." },
+      { en: "Work hard in silence and let your success speak for itself.", ar: "اعملي بصمت ودعي نجاحكِ يتحدث عن نفسه." },
+      { en: "Confidence grows with action. Take one small step forward today!", ar: "الثقة تنمو مع العمل. خذي خطوة صغيرة واحدة إلى الأمام اليوم!" },
+      { en: "Your energy is valuable—protect it and invest it in what truly matters.", ar: "طاقتكِ ثمينة—احميها واستثمريها فيما يهمكِ حقًا." },
+      { en: "Never let a temporary setback overshadow your long-term dream.", ar: "لا تدعي تعثرًا مؤقتًا يغطي على حلمكِ بعيد المدى." },
+      { en: "You are allowed to take up space, speak your truth, and shine brightly.", ar: "يحق لكِ التواجد بقوة، والتعبير عن رأيكِ، والإشراق ببريق." },
+      { en: "Consistency is key. Every single focused hour builds momentum.", ar: "الاستمرارية هي السر. كل ساعة تركيز تبني اندفاعًا أكبر نحو الهدف." },
+      { en: "Look in the mirror and remind yourself: 'I am capable, strong, and ready.'", ar: "انظري في المرآة وذكري نفسكِ: 'أنا قادرة، قوية، ومستعدة'." },
+      { en: "Keep an open heart and a resilient mind—wonders are on their way.", ar: "ابقي قلبكِ مفتوحًا وعقلكِ مرنًا—العجائب في طريقها إليكِ." },
+      { en: "The best investment you can ever make is in your own mind and well-being.", ar: "أفضل استثمار يمكنكِ القيام به هو في عقلكِ وصحتكِ النفسية." },
+      { en: "Trust that all your effort will pay off in ways beyond your imagination.", ar: "ثقي بأن كل جهدكِ سيتوج بالنجاح بطرق تفوق تخيلكِ." },
+      { en: "Be the reason someone smiles today—starting with yourself!", ar: "كوني السبب في ابتسامة أحدهم اليوم—وابدئي بنفسكِ!" },
+      { en: "Don't measure your worth by productivity. You are enough just as you are.", ar: "لا تقيسي قيمتكِ بمدى إنتاجيتكِ. أنتِ كافية كما أنتِ تمامًا." },
+      { en: "Turn your face to the sun and all the shadows will fall behind you.", ar: "وجهي وجهكِ نحو الشمس وستسقط كل الظلال خلفكِ." },
+      { en: "Your path is unique. Embrace your journey without comparing it to others.", ar: "مساركِ فريد. احتضني رحلتكِ دون مقارنتها بمسارات الآخرين." },
+      { en: "Keep creating, keep striving, and keep being unapologetically you.", ar: "واصلي الإبداع والسعي، وكوني دائمًا حقيقتكِ بثقة." },
+      { en: "Focus on momentum, not perfection. Keep moving forward!", ar: "ركزي على الزخم والتقدم، وليس على الكمال. واصلي التحرك للأمام!" },
+      { en: "Your positive attitude is a magnet for great opportunities.", ar: "موقفكِ الإيجابي يجذب الفرص العظيمة إليكِ." },
+      { en: "Remind yourself that every expert was once a beginner. Keep learning!", ar: "ذكري نفسكِ أن كل خبير كان مبتدئًا في يوم ما. واصلي التعلم!" },
+      { en: "Give yourself credit for staying strong even when things felt heavy.", ar: "قدري نفسكِ على صمودكِ وقوتكِ حتى عندما كانت الأمور ثقيلة." },
+      { en: "Focus on peace, clarity, and purpose as you navigate your day.", ar: "ركزي على السلام والوضوح والهدف أثناء قيادة يومكِ." },
+      { en: "You possess a creative spirit that can find solutions to any problem.", ar: "تملكين روحًا إبداعية قادرة على إيجاد حلول لأي مشكلة." },
+      { en: "Take pride in how adaptable and resilient you are.", ar: "افخري بمدى قدرتكِ على التكيف والصمود." },
+      { en: "Your passion is contagious—let it guide you to new heights.", ar: "شغفكِ معدٍ—دعيه يقودكِ نحو قمم جديدة." },
+      { en: "Clear your mind of 'can't' and replace it with 'watch me try.'", ar: "اطردي كلمة 'لا أستطيع' من عقلكِ واستبدليها بـ 'شاهدني وأنا أحاول'." },
+      { en: "Good things take time, but extraordinary things take perseverance.", ar: "الأشياء الجيدة تأخذ وقتًا، لكن الأشياء الاستثنائية تتطلب مثابرة." },
+      { en: "Stay true to your vision even when the path ahead looks unclear.", ar: "ابقي مخلصة لرؤيتكِ حتى عندما يبدو الطريق أمامكِ غير واضح." },
+      { en: "You are the author of your story. Make today a memorable page!", ar: "أنتِ كاتبة قصتكِ. اجعلي اليوم صفحة لا تُنسى!" },
+      { en: "Your future self will thank you for the hard work you put in today.", ar: "نفسكِ المستقبليّة ستشكركِ على الجهد الذي تبذلينه اليوم." },
+      { en: "Stay grounded in gratitude and watch how everything around you transforms.", ar: "ابقي ممتنة وراقبي كيف يتغير كل شيء حولكِ إلى الأفضل." },
+      { en: "You are far stronger than any obstacle standing in your path.", ar: "أنتِ أقوى بكثير من أي عقبة تقف في طريقكِ." },
+      { en: "Keep glowing, keep growing, and keep inspiring those around you.", ar: "واصلي التألق، والنمو، وإلهام من حولكِ." },
+      { en: "Take pride in your uniqueness—there is no one quite like you.", ar: "افخري بتميزكِ—فلا يوجد أحد يشبهكِ تمامًا." },
+      { en: "Every challenge you face is sculpting you into a wiser person.", ar: "كل تحدٍ تواجهينه يصقلكِ لتصبحي أكثر حكمة." },
+      { en: "Rest is not laziness—it is essential fuel for your future success.", ar: "الراحة ليست كسلاً—بل هي وقود أساسي لنجاحكِ المستقبلي." },
+      { en: "Hold on to hope. Beautiful surprises are waiting just around the corner.", ar: "تمسكي بالأمل. المفاجآت الجميلة بانتظاركِ خلف الزاوية." },
+      { en: "Your quiet determination will yield magnificent results.", ar: "إصراركِ الهادئ سيثمر نتائج باهرة." },
+      { en: "Focus on being better than you were yesterday, not better than anyone else.", ar: "ركزي على أن تكوني أفضل مما كنتِ عليه بالأمس، وليس أفضل من أي شخص آخر." },
+      { en: "Keep your heart warm, your mind clear, and your spirits high.", ar: "ابقي قلبكِ دافئًا، وعقلكِ صافيًا، وأرواحكِ عالية." },
+      { en: "Your efforts are creating waves of positive change. Keep going!", ar: "جهودكِ تخلق أمواجًا من التغيير الإيجابي. استمري!" },
+      { en: "Believe in the magic of new beginnings and fresh momentum.", ar: "آمني بسحر البدايات الجديدة والاندفاع الجديد." },
+      { en: "You have all the ingredients inside you to succeed. Mix them with action!", ar: "تملكين كل المكونات في داخلكِ للنجاح. امزجيها بالعمل!" },
+      { en: "Stay humble in victory and courageous in times of testing.", ar: "كوني متواضعة عند النجاح وشجاعة في أوقات الاختبار." },
+      { en: "Your dream is worth every second of hard work and focus.", ar: "حلمكِ يستحق كل ثانية من العمل الجاد والتركيز." },
+      { en: "Be gentle with your heart as you navigate through busy days.", ar: "كوني لطيفة مع قلبكِ أثناء خوض الأيام المليئة بالمهام." },
+      { en: "Your potential expands every single time you push past your comfort zone.", ar: "إمكانياتكِ تتوسع في كل مرة تتجاوزين فيها منطقة راحتكِ." },
+      { en: "Smile today! You are making a bigger impact than you realize.", ar: "ابتسمي اليوم! تأثيركِ أكبر بكثير مما تدركين." },
+      { en: "Keep planting seeds of dedication—your harvest is coming.", ar: "واصلي غرس بذور التفاني—حصادكِ قادم حتمًا." },
+      { en: "Never lose faith in your abilities. You are a true force of nature.", ar: "لا تفصدي إيمانكِ بقدراتكِ. أنتِ قوة حقيقية." },
+      { en: "Stand tall, breathe deep, and embrace all the opportunities of today.", ar: "اقفي بشموخ، تنفسي بعمق، واحتضني جميع فرس اليوم." },
+      { en: "You are standard-setting, trail-blazing, and completely irreplaceable.", ar: "أنتِ تصنعين المعايير، وتمهدين الطرق، ولا يمكن استبدالكِ أبداً." },
+      { en: "You are almost at the finish line of this year—be immensely proud of yourself!", ar: "أنتِ على وشك الوصول لخط نهاية هذا العام—كوني فخورة بنفسكِ إلى أقصى حد!" }
+    ];
+
+    /* Special Birthday Note for Nov 13 */
+    const birthdayNote = {
+      en: "🎉 HAPPY BIRTHDAY, RAND! 🎂🎈\n\nToday is all about celebrating YOU! May this year bring you endless happiness, beautiful surprises, peaceful days, and every goal you've been striving for.\n\nThank you for bringing so much light and joy into the world. Keep shining bright! ✨👑",
+      ar: "🎉 عيد ميلاد سعيد يا رند! 🎂🎈\n\nاليوم يوم مُميز جِدًا للاحتفال بكِ! أتمنى أن يجلب لكِ هذا العام سعادة لا تنتهي، ومفاجآت جميلة، وأيامًا مفعمة بالسلام، وتحقيق كل هدف تسعين إليه.\n\nشكرًا لأنكِ تملئين العالم بالنور والبهجة. واصلي التألق دائمًا! ✨👑"
+    };
+
+    /* Generate Continuous Daily Capsules from Oct 5, 2026 to Dec 31, 2026 */
+    const dailyCapsules = [];
+
+    function generateDailyCapsules() {
+      let startDate = new Date("2026-10-05T00:00:00");
+      let endDate = new Date("2026-12-31T00:00:00");
+      let monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+      let count = 0;
+      while (startDate <= endDate) {
+        let year = startDate.getFullYear();
+        let month = String(startDate.getMonth() + 1).padStart(2, '0');
+        let day = String(startDate.getDate()).padStart(2, '0');
+        let dateStr = `${year}-${month}-${day}`;
+        
+        let monthLabel = monthNames[startDate.getMonth()];
+        let dayNum = startDate.getDate();
+
+        let isBirthday = (month === '11' && day === '13');
+
+        // Choose Birthday note or standard daily message
+        let msgEn = isBirthday ? birthdayNote.en : messageBank[count % messageBank.length].en;
+        let msgAr = isBirthday ? birthdayNote.ar : messageBank[count % messageBank.length].ar;
+        let iconToUse = isBirthday ? "🎂" : icons[count % icons.length];
+
+        dailyCapsules.push({
+          date: dateStr,
+          title: isBirthday ? "NOV 13 🎂" : `${monthLabel} ${dayNum}`,
+          icon: iconToUse,
+          isBirthday: isBirthday,
+          en: msgEn,
+          ar: msgAr
+        });
+
+        startDate.setDate(startDate.getDate() + 1);
+        count++;
+      }
+    }
+
+    /* Grand New Year Letter (Jan 1, 2027) */
+    const newYearLetter = {
+      date: "2027-01-01",
+      title: "JANUARY 1, 2027 🎆",
+      icon: "💌",
+      en: "Happy New Year, Rand! 🎉\n\nWelcome to a brand new year filled with fresh starts, boundless opportunities, and extraordinary accomplishments.\n\nThank you for every single smile, laugh, and moment of dedication over the past year. I hope this new year brings you all the peace, joy, strength, and success you so richly deserve.\n\nHere's to making 2027 your most incredible year yet! ✨",
+      ar: "كل عام وأنتِ بخير يا رند! 🎉\n\nمرحبًا بكِ في عام جديد مليء بالبدايات المشرقة، والفرص اللافياسية، والإنجازات الاستثنائية.\n\nشكرًا لكِ على كل ابتسامة، وضحكة، ولحظة تفانٍ خلال العام الماضي. أتمنى أن يجلب لكِ هذا العام الجديد كل السلام والبهجة والقوة والنجاح الذي تستحقينه بجدارة.\n\nأتمنى لكِ عام 2027 أن يكون أروع وأجمل أعوامكِ على الإطلاق! ✨"
+    };
+
+    generateDailyCapsules();
+
+    /* ============================================================
+       APP LOGIC & RENDER
+       ============================================================ */
+    const grid = document.getElementById('capsuleGrid');
+    const modal = document.getElementById('modalOverlay');
+    const modalCard = document.getElementById('modalCard');
+    const modalDate = document.getElementById('modalDate');
+    const modalEnglish = document.getElementById('modalEnglish');
+    const modalArabic = document.getElementById('modalArabic');
+    const modalDivider = document.getElementById('modalDivider');
+    const closeBtn = document.getElementById('closeBtn');
+    const timerDisplay = document.getElementById('countdownTimer');
+    const secretTrigger = document.getElementById('secretTrigger');
+    const adminToggleBtn = document.getElementById('adminToggleBtn');
+    const adminBanner = document.getElementById('adminBanner');
+
+    function checkUnlocked(targetDateStr) {
+      const now = new Date();
+      const targetDate = new Date(targetDateStr + "T00:00:00");
+      return now >= targetDate;
+    }
+
+    function toggleAdminMode() {
+      isAdminMode = !isAdminMode;
+      document.body.classList.toggle('admin-mode', isAdminMode);
+      adminBanner.style.display = isAdminMode ? 'inline-block' : 'none';
+      adminToggleBtn.textContent = isAdminMode ? 'Exit Admin Mode ❌' : 'Toggle Admin Mode 🔑';
+      renderCapsules();
+    }
+
+    secretTrigger.addEventListener('click', () => {
+      tapCount++;
+      if (tapCount >= 5) {
+        tapCount = 0;
+        toggleAdminMode();
+      }
+    });
+
+    adminToggleBtn.addEventListener('click', () => {
+      toggleAdminMode();
+    });
+
+    /* Birthday Confetti Trigger Function */
+    function triggerBirthdayConfetti() {
+      if (typeof confetti === 'function') {
+        // First confetti burst
+        confetti({
+          particleCount: 100,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+
+        // Continuous side cannons burst
+        setTimeout(() => {
+          confetti({ particleCount: 50, angle: 60, spread: 55, origin: { x: 0 } });
+          confetti({ particleCount: 50, angle: 120, spread: 55, origin: { x: 1 } });
+        }, 250);
+      }
+    }
+
+    function renderCapsules() {
+      grid.innerHTML = "";
+
+      // 1. Render all daily capsules
+      dailyCapsules.forEach(item => {
+        const isUnlocked = checkUnlocked(item.date);
+        const card = document.createElement('div');
+        
+        let extraClass = item.isBirthday ? "birthday-special" : "";
+        card.className = `capsule-item ${isUnlocked ? 'unlocked' : 'locked'} ${extraClass}`;
+        
+        card.innerHTML = `
+          <div class="capsule-icon">${isUnlocked || isAdminMode ? item.icon : "🔒"}</div>
+          <div class="capsule-date">${item.title}</div>
+        `;
+
+        card.addEventListener('click', () => {
+          if (isUnlocked || isAdminMode) {
+            const prefix = (!isUnlocked && isAdminMode) ? "[ADMIN PREVIEW]\n" : "";
+            openModal(item.title, prefix + item.en, item.ar, item.isBirthday);
+          } else {
+            openModal(item.title, "🔒 This capsule is locked until " + item.title + "!", "🔒 هذه الكبسولة مغلقة حتى " + item.title + "!", false);
+          }
+        });
+
+        grid.appendChild(card);
+      });
+
+      // 2. Render Grand New Year Capsule at the bottom
+      const isNYUnlocked = checkUnlocked(newYearLetter.date);
+      const nyCard = document.createElement('div');
+      nyCard.className = `capsule-item ny-capsule ${isNYUnlocked ? 'unlocked' : 'locked'}`;
+      nyCard.innerHTML = `
+        <h2>${isNYUnlocked || isAdminMode ? "💌 Open Your New Year Letter!" : "🔒 Grand New Year Capsule"}</h2>
+        <div style="font-size: 0.88rem; margin-top: 6px; opacity: 0.92;">Unlocks Midnight Jan 1, 2027 • يُفتح منتصف الليل</div>
+      `;
+
+      nyCard.addEventListener('click', () => {
+        if (isNYUnlocked || isAdminMode) {
+          const prefix = (!isNYUnlocked && isAdminMode) ? "[ADMIN PREVIEW]\n" : "";
+          openModal(newYearLetter.title, prefix + newYearLetter.en, newYearLetter.ar, false);
+          if (typeof confetti === 'function') {
+            confetti({ particleCount: 150, spread: 100, origin: { y: 0.5 } });
+          }
+        } else {
+          openModal("JANUARY 1, 2027", "🔒 The New Year Letter is safely locked until Midnight on January 1st!", "🔒 رسالة رأس السنة مغلقة بأمان حتى منتصف ليل 1 يناير!", false);
+        }
+      });
+
+      grid.appendChild(nyCard);
+    }
+
+    function openModal(dateText, enText, arText, isBirthday = false) {
+      modalDate.textContent = dateText;
+      modalEnglish.textContent = enText;
+      
+      if (arText) {
+        modalArabic.textContent = arText;
+        modalArabic.style.display = "block";
+        modalDivider.style.display = "block";
+      } else {
+        modalArabic.style.display = "none";
+        modalDivider.style.display = "none";
+      }
+
+      if (isBirthday) {
+        modalCard.classList.add('birthday-modal');
+        triggerBirthdayConfetti();
+      } else {
+        modalCard.classList.remove('birthday-modal');
+      }
+
+      modal.classList.add('active');
+    }
+
+    closeBtn.addEventListener('click', () => {
+      modal.classList.remove('active');
+    });
+
+    // Countdown Timer to Jan 1, 2027
+    function updateCountdown() {
+      const now = new Date().getTime();
+      const newYear = new Date("2027-01-01T00:00:00").getTime();
+      const diff = newYear - now;
+
+      if (diff <= 0) {
+        timerDisplay.textContent = "🎆 HAPPY NEW YEAR 2027 • سنة جديدة سعيدة! 🎆";
+        return;
+      }
+
+      const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+      const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      timerDisplay.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+    }
+
+    setInterval(updateCountdown, 1000);
+    updateCountdown();
+    renderCapsules();
+  </script>
+</body>
+</html>
